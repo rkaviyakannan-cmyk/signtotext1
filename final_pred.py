@@ -10,6 +10,7 @@ from keras.models import load_model
 from cvzone.HandTrackingModule import HandDetector
 from string import ascii_uppercase
 import enchant
+from googletrans import Translator
 ddd=enchant.Dict("en-US")
 hd = HandDetector(maxHands=1)
 hd2 = HandDetector(maxHands=1)
@@ -34,6 +35,7 @@ class Application:
         self.speak_engine.setProperty("rate",100)
         voices=self.speak_engine.getProperty("voices")
         self.speak_engine.setProperty("voice",voices[0].id)
+        self.translator = Translator()
 
         self.ct = {}
         self.ct['blank'] = 0
@@ -81,6 +83,13 @@ class Application:
         self.T3.place(x=10, y=632)
         self.T3.config(text="Sentence :", font=("Courier", 30, "bold"))
 
+        self.panel6 = tk.Label(self.root)  # Translated Sentence
+        self.panel6.place(x=260, y=672)
+
+        self.T5 = tk.Label(self.root)
+        self.T5.place(x=10, y=672)
+        self.T5.config(text="Translated:", font=("Courier", 30, "bold"))
+
         self.T4 = tk.Label(self.root)
         self.T4.place(x=10, y=700)
         self.T4.config(text="Suggestions :", fg="red", font=("Courier", 30, "bold"))
@@ -98,6 +107,10 @@ class Application:
         self.b4 = tk.Button(self.root)
         self.b4.place(x=990, y=700)
 
+        self.translate = tk.Button(self.root)
+        self.translate.place(x=1000, y=630)
+        self.translate.config(text="Translate", font=("Courier", 20), wraplength=100, command=self.translate_fun)
+
         self.speak = tk.Button(self.root)
         self.speak.place(x=1305, y=630)
         self.speak.config(text="Speak", font=("Courier", 20), wraplength=100, command=self.speak_fun)
@@ -105,10 +118,6 @@ class Application:
         self.clear = tk.Button(self.root)
         self.clear.place(x=1205, y=630)
         self.clear.config(text="Clear", font=("Courier", 20), wraplength=100, command=self.clear_fun)
-
-
-
-
 
         self.str = " "
         self.ccc=0
@@ -188,8 +197,8 @@ class Application:
                             res=white
                             self.predict(res)
 
-                            self.current_image2 = Image.fromarray(res)
-
+                            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                            self.current_image2 = Image.fromarray(image_rgb).resize((400,400))
                             imgtk = ImageTk.PhotoImage(image=self.current_image2)
 
                             self.panel2.imgtk = imgtk
@@ -223,7 +232,7 @@ class Application:
                 x, y, w, h = hand['bbox']
                 image = cv2image_copy[y - offset:y + h + offset, x - offset:x + w + offset]
 
-                white = cv2.imread("C:\\Users\\devansh raval\\PycharmProjects\\pythonProject\\white.jpg")
+                white = cv2.imread("white.jpg")
                 # img_final=img_final1=img_final2=0
 
                 handz = hd2.findHands(image, draw=False, flipType=True)
@@ -268,8 +277,8 @@ class Application:
                     res=white
                     self.predict(res)
 
-                    self.current_image2 = Image.fromarray(res)
-
+                    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                    self.current_image2 = Image.fromarray(image_rgb).resize((400,400))
                     imgtk = ImageTk.PhotoImage(image=self.current_image2)
 
                     self.panel2.imgtk = imgtk
@@ -328,6 +337,10 @@ class Application:
         self.str = self.str[:idx_word]
         self.str = self.str + self.word4.upper()
 
+    def translate_fun(self):
+        if self.str.strip():
+            translated = self.translator.translate(self.str, dest='ta')
+            self.panel6.config(text=translated.text, font=("Courier", 30), wraplength=1025)
 
     def speak_fun(self):
         self.speak_engine.say(self.str)
@@ -340,6 +353,7 @@ class Application:
         self.word2 = " "
         self.word3 = " "
         self.word4 = " "
+        self.panel6.config(text="")
 
     def predict(self, test_image):
         white=test_image
