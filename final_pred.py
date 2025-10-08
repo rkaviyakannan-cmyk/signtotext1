@@ -31,6 +31,10 @@ class Application:
 
     def __init__(self):
         self.vs = cv2.VideoCapture(0)
+        if not self.vs.isOpened():
+            print("Error: Could not open video stream.")
+            # self.root.destroy()
+            return
         self.current_image = None
         self.model = load_model('cnn8grps_rad1_model.h5')
         self.speak_engine=pyttsx3.init()
@@ -153,170 +157,68 @@ class Application:
         self.video_loop()
 
     def video_loop(self):
+        ok, frame = self.vs.read()
+        if not ok:
+            print("Error: Could not read frame from video stream.")
+            self.root.after(1, self.video_loop)
+            return
+
+        cv2image = cv2.flip(frame, 1)
+
         try:
-            ok, frame = self.vs.read()
-            cv2image = cv2.flip(frame, 1)
-            if cv2image.any:
-                hands = hd.findHands(cv2image, draw=False, flipType=True)
-                cv2image_copy=np.array(cv2image)
-                cv2image = cv2.cvtColor(cv2image, cv2.COLOR_BGR2RGB)
-                self.current_image = Image.fromarray(cv2image)
-                imgtk = ImageTk.PhotoImage(image=self.current_image)
-                self.panel.imgtk = imgtk
-                self.panel.config(image=imgtk)
-
-                if hands[0]:
-                    hand = hands[0]
-                    map = hand[0]
-                    x, y, w, h=map['bbox']
-                    image = cv2image_copy[y - offset:y + h + offset, x - offset:x + w + offset]
-
-                    white = cv2.imread("white.jpg")
-                    # img_final=img_final1=img_final2=0
-                    if image.all:
-                        handz = hd2.findHands(image, draw=False, flipType=True)
-                        self.ccc += 1
-                        if handz[0]:
-                            hand = handz[0]
-                            handmap=hand[0]
-                            self.pts = handmap['lmList']
-                            # x1,y1,w1,h1=hand['bbox']
-
-                            os = ((400 - w) // 2) - 15
-                            os1 = ((400 - h) // 2) - 15
-                            for t in range(0, 4, 1):
-                                cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                         (0, 255, 0), 3)
-                            for t in range(5, 8, 1):
-                                cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                         (0, 255, 0), 3)
-                            for t in range(9, 12, 1):
-                                cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                         (0, 255, 0), 3)
-                            for t in range(13, 16, 1):
-                                cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                         (0, 255, 0), 3)
-                            for t in range(17, 20, 1):
-                                cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                         (0, 255, 0), 3)
-                            cv2.line(white, (self.pts[5][0] + os, self.pts[5][1] + os1), (self.pts[9][0] + os, self.pts[9][1] + os1), (0, 255, 0),
-                                     3)
-                            cv2.line(white, (self.pts[9][0] + os, self.pts[9][1] + os1), (self.pts[13][0] + os, self.pts[13][1] + os1), (0, 255, 0),
-                                     3)
-                            cv2.line(white, (self.pts[13][0] + os, self.pts[13][1] + os1), (self.pts[17][0] + os, self.pts[17][1] + os1),
-                                     (0, 255, 0), 3)
-                            cv2.line(white, (self.pts[0][0] + os, self.pts[0][1] + os1), (self.pts[5][0] + os, self.pts[5][1] + os1), (0, 255, 0),
-                                     3)
-                            cv2.line(white, (self.pts[0][0] + os, self.pts[0][1] + os1), (self.pts[17][0] + os, self.pts[17][1] + os1), (0, 255, 0),
-                                     3)
-
-                            for i in range(21):
-                                cv2.circle(white, (self.pts[i][0] + os, self.pts[i][1] + os1), 2, (0, 0, 255), 1)
-
-                            res=white
-                            self.predict(res)
-
-                            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                            self.current_image2 = Image.fromarray(image_rgb).resize((400,400))
-                            imgtk = ImageTk.PhotoImage(image=self.current_image2)
-
-                            # self.panel2.imgtk = imgtk
-                            # self.panel2.config(image=imgtk)
-
-                            self.panel3.config(text=self.current_symbol, font=("Courier", 20))
-
-                            #self.panel4.config(text=self.word, font=("Courier", 20))
-
-
-
-                            self.b1.config(text=self.word1, font=("Courier", 15), wraplength=825, command=self.action1)
-                            self.b2.config(text=self.word2, font=("Courier", 15), wraplength=825,  command=self.action2)
-                            self.b3.config(text=self.word3, font=("Courier", 15), wraplength=825,  command=self.action3)
-                            self.b4.config(text=self.word4, font=("Courier", 15), wraplength=825,  command=self.action4)
-
-                self.panel5.config(text=self.str, font=("Courier", 20), wraplength=1025)
-        except Exception:
-            print(Exception.__traceback__)
             hands = hd.findHands(cv2image, draw=False, flipType=True)
-            cv2image_copy=np.array(cv2image)
-            cv2image = cv2.cvtColor(cv2image, cv2.COLOR_BGR2RGB)
-            self.current_image = Image.fromarray(cv2image)
+            cv2image_copy = np.array(cv2image)
+            cv2image_rgb = cv2.cvtColor(cv2image, cv2.COLOR_BGR2RGB)
+            self.current_image = Image.fromarray(cv2image_rgb)
             imgtk = ImageTk.PhotoImage(image=self.current_image)
             self.panel.imgtk = imgtk
             self.panel.config(image=imgtk)
 
-            if hands:
-                # #print(" --------- lmlist=",hands[1])
+            if hands and hands[0]:
                 hand = hands[0]
-                x, y, w, h = hand['bbox']
+                map_data = hand[0]
+                x, y, w, h = map_data['bbox']
                 image = cv2image_copy[y - offset:y + h + offset, x - offset:x + w + offset]
 
-                white = cv2.imread("white.jpg")
-                # img_final=img_final1=img_final2=0
+                if image.size > 0:
+                    white = cv2.imread("white.jpg")
+                    handz = hd2.findHands(image, draw=False, flipType=True)
+                    self.ccc += 1
+                    if handz and handz[0]:
+                        hand = handz[0]
+                        handmap = hand[0]
+                        self.pts = handmap['lmList']
 
-                handz = hd2.findHands(image, draw=False, flipType=True)
-                print(" ", self.ccc)
-                self.ccc += 1
-                if handz:
-                    hand = handz[0]
-                    self.pts = hand['lmList']
-                    # x1,y1,w1,h1=hand['bbox']
+                        os_w = ((400 - w) // 2) - 15
+                        os_h = ((400 - h) // 2) - 15
 
-                    os = ((400 - w) // 2) - 15
-                    os1 = ((400 - h) // 2) - 15
-                    for t in range(0, 4, 1):
-                        cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                 (0, 255, 0), 3)
-                    for t in range(5, 8, 1):
-                        cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                 (0, 255, 0), 3)
-                    for t in range(9, 12, 1):
-                        cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                 (0, 255, 0), 3)
-                    for t in range(13, 16, 1):
-                        cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                 (0, 255, 0), 3)
-                    for t in range(17, 20, 1):
-                        cv2.line(white, (self.pts[t][0] + os, self.pts[t][1] + os1), (self.pts[t + 1][0] + os, self.pts[t + 1][1] + os1),
-                                 (0, 255, 0), 3)
-                    cv2.line(white, (self.pts[5][0] + os, self.pts[5][1] + os1), (self.pts[9][0] + os, self.pts[9][1] + os1), (0, 255, 0),
-                             3)
-                    cv2.line(white, (self.pts[9][0] + os, self.pts[9][1] + os1), (self.pts[13][0] + os, self.pts[13][1] + os1), (0, 255, 0),
-                             3)
-                    cv2.line(white, (self.pts[13][0] + os, self.pts[13][1] + os1), (self.pts[17][0] + os, self.pts[17][1] + os1),
-                             (0, 255, 0), 3)
-                    cv2.line(white, (self.pts[0][0] + os, self.pts[0][1] + os1), (self.pts[5][0] + os, self.pts[5][1] + os1), (0, 255, 0),
-                             3)
-                    cv2.line(white, (self.pts[0][0] + os, self.pts[0][1] + os1), (self.pts[17][0] + os, self.pts[17][1] + os1), (0, 255, 0),
-                             3)
+                        points_to_draw = [
+                            (0, 4), (5, 8), (9, 12), (13, 16), (17, 20)
+                        ]
+                        for start, end in points_to_draw:
+                            for t in range(start, end):
+                                cv2.line(white, (self.pts[t][0] + os_w, self.pts[t][1] + os_h), (self.pts[t + 1][0] + os_w, self.pts[t + 1][1] + os_h), (0, 255, 0), 3)
 
-                    for i in range(21):
-                        cv2.circle(white, (self.pts[i][0] + os, self.pts[i][1] + os1), 2, (0, 0, 255), 1)
+                        connections = [(5, 9), (9, 13), (13, 17), (0, 5), (0, 17)]
+                        for start, end in connections:
+                            cv2.line(white, (self.pts[start][0] + os_w, self.pts[start][1] + os_h), (self.pts[end][0] + os_w, self.pts[end][1] + os_h), (0, 255, 0), 3)
 
-                    res=white
-                    self.predict(res)
+                        for i in range(21):
+                            cv2.circle(white, (self.pts[i][0] + os_w, self.pts[i][1] + os_h), 2, (0, 0, 255), 1)
 
-                    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                    self.current_image2 = Image.fromarray(image_rgb).resize((400,400))
-                    imgtk = ImageTk.PhotoImage(image=self.current_image2)
+                        self.predict(white)
 
-                    # self.panel2.imgtk = imgtk
-                    # self.panel2.config(image=imgtk)
+                        self.panel3.config(text=self.current_symbol, font=("Courier", 20))
 
-                    self.panel3.config(text=self.current_symbol, font=("Courier", 20))
-
-                    #self.panel4.config(text=self.word, font=("Courier", 20))
-
-
-
-                    self.b1.config(text=self.word1, font=("Courier", 15), wraplength=825, command=self.action1)
-                    self.b2.config(text=self.word2, font=("Courier", 15), wraplength=825,  command=self.action2)
-                    self.b3.config(text=self.word3, font=("Courier", 15), wraplength=825,  command=self.action3)
-                    self.b4.config(text=self.word4, font=("Courier", 15), wraplength=825,  command=self.action4)
+                        self.b1.config(text=self.word1, font=("Courier", 15), wraplength=825, command=self.action1)
+                        self.b2.config(text=self.word2, font=("Courier", 15), wraplength=825, command=self.action2)
+                        self.b3.config(text=self.word3, font=("Courier", 15), wraplength=825, command=self.action3)
+                        self.b4.config(text=self.word4, font=("Courier", 15), wraplength=825, command=self.action4)
 
             self.panel5.config(text=self.str, font=("Courier", 20), wraplength=1025)
-        except Exception:
-            print("==", traceback.format_exc())
+        except Exception as e:
+            print(f"An error occurred in video_loop: {e}")
+            traceback.print_exc()
         finally:
             self.root.after(1, self.video_loop)
 
