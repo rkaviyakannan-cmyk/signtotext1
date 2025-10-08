@@ -11,6 +11,8 @@ from cvzone.HandTrackingModule import HandDetector
 from string import ascii_uppercase
 import enchant
 from googletrans import Translator
+from gtts import gTTS
+from playsound import playsound
 ddd=enchant.Dict("en-US")
 hd = HandDetector(maxHands=1)
 hd2 = HandDetector(maxHands=1)
@@ -91,33 +93,50 @@ class Application:
         self.T5.config(text="Translated:", font=("Courier", 20, "bold"))
 
         self.T4 = tk.Label(self.root)
-        self.T4.place(x=10, y=630)
+        self.T4.place(x=410, y=630)
         self.T4.config(text="Suggestions :", fg="red", font=("Courier", 20, "bold"))
 
 
         self.b1=tk.Button(self.root)
-        self.b1.place(x=250,y=630)
+        self.b1.place(x=410, y=665)
 
         self.b2 = tk.Button(self.root)
-        self.b2.place(x=450, y=630)
+        self.b2.place(x=530, y=665)
 
         self.b3 = tk.Button(self.root)
-        self.b3.place(x=650, y=630)
+        self.b3.place(x=650, y=665)
 
         self.b4 = tk.Button(self.root)
-        self.b4.place(x=850, y=630)
+        self.b4.place(x=770, y=665)
 
         self.translate = tk.Button(self.root)
         self.translate.place(x=900, y=100)
         self.translate.config(text="Translate", font=("Courier", 15), wraplength=100, command=self.translate_fun)
 
         self.speak = tk.Button(self.root)
-        self.speak.place(x=1000, y=100)
+        self.speak.place(x=1020, y=100)
         self.speak.config(text="Speak", font=("Courier", 15), wraplength=100, command=self.speak_fun)
 
         self.clear = tk.Button(self.root)
-        self.clear.place(x=1100, y=100)
+        self.clear.place(x=1140, y=100)
         self.clear.config(text="Clear", font=("Courier", 15), wraplength=100, command=self.clear_fun)
+
+        self.language_var = tk.StringVar(value="ta")
+        self.tamil_radio = tk.Radiobutton(self.root, text="Tamil", variable=self.language_var, value="ta", font=("Courier", 12))
+        self.tamil_radio.place(x=900, y=140)
+        self.hindi_radio = tk.Radiobutton(self.root, text="Hindi", variable=self.language_var, value="hi", font=("Courier", 12))
+        self.hindi_radio.place(x=980, y=140)
+
+        self.speak_translated = tk.Button(self.root)
+        self.speak_translated.place(x=900, y=170)
+        self.speak_translated.config(text="Speak Translated", font=("Courier", 15), wraplength=150, command=self.speak_translated_fun)
+
+        # Add image to the right side
+        self.sign_image = Image.open("sign.jpg")
+        self.sign_image = self.sign_image.resize((400, 400), Image.LANCZOS)
+        self.sign_photo = ImageTk.PhotoImage(self.sign_image)
+        self.image_label = tk.Label(self.root, image=self.sign_photo)
+        self.image_label.place(x=900, y=280)
 
         self.str = " "
         self.ccc=0
@@ -339,8 +358,18 @@ class Application:
 
     def translate_fun(self):
         if self.str.strip():
-            translated = self.translator.translate(self.str, dest='ta')
+            lang = self.language_var.get()
+            translated = self.translator.translate(self.str, dest=lang)
             self.panel6.config(text=translated.text, font=("Courier", 20), wraplength=1025)
+
+    def speak_translated_fun(self):
+        translated_text = self.panel6.cget("text")
+        if translated_text:
+            lang = self.language_var.get()
+            tts = gTTS(text=translated_text, lang=lang)
+            tts.save("translated_speech.mp3")
+            playsound("translated_speech.mp3")
+            os.remove("translated_speech.mp3")
 
     def speak_fun(self):
         self.speak_engine.say(self.str)
